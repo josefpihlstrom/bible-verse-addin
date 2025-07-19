@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Bible Verse Selector</title>
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <script src="taskpane.js" defer></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 16px;
+    }
+    select, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    #verse-checkboxes {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    #verse-checkboxes div {
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Importerare</h2>
+
+  <label for="bible-dropdown">Bibel:</label>
+  <select id="bible-dropdown" disabled>
+    <option>Laddar...</option>
+  </select>
+
+  <label for="book-dropdown">Bok:</label>
+  <select id="book-dropdown" disabled>
+    <option>Välj Bibel först</option>
+  </select>
+
+  <label for="chapter-dropdown">Kapitel:</label>
+  <select id="chapter-dropdown" disabled>
+    <option>Välj bok först</option>
+  </select>
+
+  <label for="chapter-dropdown">Verser:</label>
+  <div id="verse-checkboxes">
+    <!-- Verse checkboxes appear here -->
+  </div>
+
+  <button id="insert-verses">Importera</button>
+</body>
+</html>
