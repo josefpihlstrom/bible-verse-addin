@@ -123,20 +123,22 @@ Office.onReady(() => {
       const leftMargin = 60;
       const spacing = 40;
 
-      slide.shapes.addTextBox(sfbText, {
+      const mainShape = slide.shapes.addTextBox(sfbText, {
         left: leftMargin,
         top: topMargin,
         width: boxWidth,
         height: boxHeight,
       });
 
-      slide.shapes.addTextBox(fbvText, {
+      const parallelShape = slide.shapes.addTextBox(fbvText, {
         left: leftMargin + boxWidth + spacing,
         top: topMargin,
         width: boxWidth,
         height: boxHeight,
       });
 
+      mainShape.textFrame.font.size = 36;
+      parallelShape.textFrame.font.size = 36;
 
         await context.sync();
         console.log("Inserted selected verses.");
