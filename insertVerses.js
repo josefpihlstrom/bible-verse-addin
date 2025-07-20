@@ -1,95 +1,101 @@
-export async function insertVersesToSlide(verses) {
-  const firstVerse = verses[0];
-  const lastVerse = verses[verses.length - 1];
+import { formatVerseText } from "./helpers.js";
 
-  const firstRefParts = firstVerse.reference.split(" ");
-  const bookName = firstRefParts.slice(0, -1).join(" ");
-  const [firstChapter, firstVerseNumber] = firstRefParts.at(-1).split(":");
+// Helper to build PowerPoint-formatted rich text parts
+function buildFormattedText(context, title, verseText) {
+  const lines = [`${title}`, ...verseText.split(/(?=\[\d+\])/)];
+  const paragraph = context.presentation.text.createTextRange("");
+  let textRange = paragraph;
 
-  const lastRefParts = lastVerse.reference.split(" ");
-  const [lastChapter, lastVerseNumber] = lastRefParts.at(-1).split(":");
+  lines.forEach((line, i) => {
+    const isTitle = i === 0;
+    const range = context.presentation.text.createTextRange(line + "\n");
+    if (isTitle) {
+      range.font.bold = true;
+    } else {
+      // Superscript verse markers
+      const match = line.match(/^\[(\d+)\]/);
+      if (match) {
+        const verseNum = match[0];
+        const rest = line.substring(verseNum.length);
 
-  const sameChapter = firstChapter === lastChapter;
-  const baseRef = `${bookName} ${firstChapter}:${firstVerseNumber === lastVerseNumber
-    ? firstVerseNumber
-    : `${firstVerseNumber}${sameChapter ? `–${lastVerseNumber}` : `–${lastChapter}:${lastVerseNumber}`}`
-  }`;
+        const supRange = context.presentation.text.createTextRange(verseNum);
+        supRange.font.superscript = true;
 
-  const sfbTitle = `${baseRef} [SFB]`;
-  const chapterAndVerse = baseRef.substring(baseRef.lastIndexOf(" ") + 1);
-  const fbvTitle = `${verses[0].parallelBookID} ${chapterAndVerse} [BSB]`;
+        const textRangeRest = context.presentation.text.createTextRange(rest + "\n");
 
-  // Format verse text with superscript markers and new lines
-  const sfbFormatted = verses.map(v =>
-    `${getSuperscriptMarker(v.reference)} ${v.baseText}`
-  ).join("\n");
-
-  const fbvFormatted = verses.map(v =>
-    `${getSuperscriptMarker(v.reference)} ${v.parallelText || "[Not available]"}`
-  ).join("\n");
-
-  await PowerPoint.run(async (context) => {
-    const selectedSlides = context.presentation.getSelectedSlides();
-    selectedSlides.load("items");
-    await context.sync();
-
-    if (selectedSlides.items.length === 0) {
-      console.log("No slide selected.");
-      return;
+        range.text = ""; // reset to append parts
+        range.insertTextRange("Start", supRange);
+        range.insertTextRange("End", textRangeRest);
+      }
     }
 
-    const slide = selectedSlides.items[0];
-
-    const boxWidth = 400;
-    const boxHeight = 500;
-    const topMargin = 100;
-    const leftMargin = 60;
-    const spacing = 40;
-
-    const sfbTextbox = slide.shapes.addTextBox(`${sfbTitle}\n${sfbFormatted}`, {
-      left: leftMargin,
-      top: topMargin,
-      width: boxWidth,
-      height: boxHeight,
-    });
-
-    const fbvTextbox = slide.shapes.addTextBox(`${fbvTitle}\n${fbvFormatted}`, {
-      left: leftMargin + boxWidth + spacing,
-      top: topMargin,
-      width: boxWidth,
-      height: boxHeight,
-    });
-
-    // Style: bold title, font size 36, superscript verse numbers
-    [sfbTextbox, fbvTextbox].forEach(textbox => {
-      const paragraphs = textbox.textFrame.textRange.paragraphs;
-      const lines = textbox.textFrame.textRange.text.split("\n");
-
-      textbox.textFrame.textRange.font.size = 36;
-
-      if (lines.length > 0) {
-        paragraphs.getItemAt(0).font.bold = true;
-      }
-
-      // Apply superscript to verse markers like [1], [2], etc.
-      for (let i = 1; i < paragraphs.items.length; i++) {
-        const para = paragraphs.getItemAt(i);
-        const matches = [...para.text.matchAll(/\[(\d+)\]/g)];
-        for (const match of matches) {
-          const index = match.index;
-          const length = match[0].length;
-          const range = para.getSubstring(index, length);
-          range.font.superscript = true;
-        }
-      }
-    });
-
-    await context.sync();
+    textRange.insertTextRange("End", range);
   });
+
+  return textRange;
 }
 
-function getSuperscriptMarker(reference) {
-  const versePart = reference.split(":")[1];
-  const verseNumber = versePart.split("–")[0];
-  return `[${verseNumber}]`;
+export async function insertVersesToSlide(context, slide, sfbTitle, sfbFormatted, fbvTitle, fbvFormatted) {
+  const boxWidth = 400;
+  const boxHeight = 500;
+  const topMargin = 100;
+  const leftMargin = 60;
+  const spacing = 40;
+
+  const shapes = slide.shapes;
+
+  // Remove previous verse boxes if needed
+  shapes.load("items");
+  await context.sync();
+
+  shapes.items.forEach(shape => shape.load("text"));
+  await context.sync();
+
+  for (const shape of shapes.items) {
+    if (shape.text && (shape.text.includes("[SFB]") || shape.text.includes("[BSB]"))) {
+      shape.delete();
+    }
+  }
+
+  // Insert new textboxes
+  const sfbShape = shapes.addTextBox(sfbTitle + "\n" + sfbFormatted, {
+    left: leftMargin,
+    top: topMargin,
+    width: boxWidth,
+    height: boxHeight,
+  });
+
+  const fbvShape = shapes.addTextBox(fbvTitle + "\n" + fbvFormatted, {
+    left: leftMargin + boxWidth + spacing,
+    top: topMargin,
+    width: boxWidth,
+    height: boxHeight,
+  });
+
+  // Load their text ranges
+  sfbShape.textFrame.textRange.load("text");
+  fbvShape.textFrame.textRange.load("text");
+  await context.sync();
+
+  // Set font styles
+  [sfbShape, fbvShape].forEach(shape => {
+    const textRange = shape.textFrame.textRange;
+    textRange.font.size = 36;
+
+    // Bold the first line (title)
+    const titleEndIndex = textRange.text.indexOf("\n");
+    if (titleEndIndex !== -1) {
+      const titleRange = textRange.getSubstring(0, titleEndIndex);
+      titleRange.font.bold = true;
+    }
+
+    // Superscript verse markers like [1], [2], etc.
+    const verseMatches = [...textRange.text.matchAll(/\[\d+\]/g)];
+    verseMatches.forEach(match => {
+      const range = textRange.getSubstring(match.index, match.index + match[0].length);
+      range.font.superscript = true;
+    });
+  });
+
+  await context.sync();
 }

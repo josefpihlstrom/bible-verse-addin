@@ -69,13 +69,50 @@ Office.onReady(() => {
       );
       const verses = await Promise.all(versePromises);
 
-      await insertVersesToSlide(verses);
+      const sfbFormatted = verses
+        .map(v => `${v.reference} ${v.baseText}`)
+        .join(" ");
+      const fbvFormatted = verses
+        .map(v => `${v.reference} ${v.parallelText || "[Not available]"}`)
+        .join(" ");
+
+      const firstVerse = verses[0];
+      const lastVerse = verses[verses.length - 1];
+
+      const firstRefParts = firstVerse.reference.split(" ");
+      const bookName = firstRefParts.slice(0, -1).join(" ");
+      const [firstChapter, firstVerseNumber] = firstRefParts.at(-1).split(":");
+
+      const lastRefParts = lastVerse.reference.split(" ");
+      const [lastChapter, lastVerseNumber] = lastRefParts.at(-1).split(":");
+
+      const sameChapter = firstChapter === lastChapter;
+      const baseRef = `${bookName} ${firstChapter}:${firstVerseNumber === lastVerseNumber
+        ? firstVerseNumber
+        : `${firstVerseNumber}${sameChapter ? `–${lastVerseNumber}` : `–${lastChapter}:${lastVerseNumber}`}`
+      }`;
+
+      const sfbTitle = `${baseRef} [SFB]`;
+      const fbvTitle = `${verses[0].parallelBookID} ${baseRef.split(" ").at(-1)} [BSB]`;
+
+      await PowerPoint.run(async (context) => {
+        const selectedSlides = context.presentation.getSelectedSlides();
+        selectedSlides.load("items");
+        await context.sync();
+
+        if (selectedSlides.items.length === 0) {
+          console.log("No slide selected.");
+          return;
+        }
+
+        const slide = selectedSlides.items[0];
+        await insertVersesToSlide(context, slide, sfbTitle, sfbFormatted, fbvTitle, fbvFormatted);
+      });
     } catch (error) {
       console.error("Error inserting verses:", error);
     }
   });
 
-  // Load list of Bibles in Swedish (or selected language)
   async function loadBibles() {
     try {
       const data = await fetchBibles();
@@ -87,7 +124,6 @@ Office.onReady(() => {
     }
   }
 
-  // Load books for selected Bible
   async function loadBooks(bibleId) {
     try {
       const data = await fetchBooks(bibleId);
@@ -98,7 +134,6 @@ Office.onReady(() => {
     }
   }
 
-  // Load chapters for selected book
   async function loadChapters(bibleId, bookId) {
     try {
       const data = await fetchChapters(bibleId, bookId);
@@ -109,7 +144,6 @@ Office.onReady(() => {
     }
   }
 
-  // Load checkboxes for verses in selected chapter
   async function loadVerses(bibleId, chapterId, container) {
     try {
       const data = await fetchVerses(bibleId, chapterId);
