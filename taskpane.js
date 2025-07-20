@@ -11,7 +11,7 @@ import {
   clearCheckboxes,
   createVerseCheckbox,
 } from "./ui.js";
-import { formatVerseText } from "./helpers.js";
+import { insertVersesToSlide } from "./insertVerses.js";
 
 let bibleList = [];
 let selectedBibleId = null;
@@ -69,80 +69,7 @@ Office.onReady(() => {
       );
       const verses = await Promise.all(versePromises);
 
-      // Format main and parallel versions
-      const sfbFormatted = verses
-        .map(v => `${formatVerseText(v.reference, v.baseText)}`)
-        .join(" ");
-      const fbvFormatted = verses
-        .map(v => `${formatVerseText(v.reference, v.parallelText || "[Not available]")}`)
-        .join(" ");
-
-      // Generate clean combined reference title like: "Genesis 1:1–2"
-      const firstVerse = verses[0];
-      const lastVerse = verses[verses.length - 1];
-
-      // Use reference string like "Genesis 1:1"
-      const firstRefParts = firstVerse.reference.split(" ");
-      const bookName = firstRefParts.slice(0, -1).join(" "); // handles multi-word books like "1 Thessalonians"
-      const [firstChapter, firstVerseNumber] = firstRefParts.at(-1).split(":");
-
-      const lastRefParts = lastVerse.reference.split(" ");
-      const [lastChapter, lastVerseNumber] = lastRefParts.at(-1).split(":");
-
-      const sameChapter = firstChapter === lastChapter;
-      const baseRef = `${bookName} ${firstChapter}:${firstVerseNumber === lastVerseNumber
-        ? firstVerseNumber
-        : `${firstVerseNumber}${sameChapter ? `–${lastVerseNumber}` : `–${lastChapter}:${lastVerseNumber}`}`
-      }`;
-
-      const sfbTitle = `${baseRef} [SFB]`;
-      const lastSpaceIndex = baseRef.lastIndexOf(" ");
-      const chapterAndVerse = baseRef.substring(lastSpaceIndex + 1);
-      const fbvTitle = `${verses[0].parallelBookID} ${chapterAndVerse} [BSB]`;
-
-      const sfbText = `${sfbTitle}\n${sfbFormatted}`;
-      const fbvText = `${fbvTitle}\n${fbvFormatted}`;
-
-      // Insert textboxes on selected slide
-      await PowerPoint.run(async (context) => {
-        const selectedSlides = context.presentation.getSelectedSlides();
-        selectedSlides.load("items");
-        await context.sync();
-
-        if (selectedSlides.items.length === 0) {
-          console.log("No slide selected.");
-          return;
-        }
-
-        const slide = selectedSlides.items[0];
-
-      // Insert side-by-side textboxes
-      const boxWidth = 400;
-      const boxHeight = 500;
-      const topMargin = 100;
-      const leftMargin = 60;
-      const spacing = 40;
-
-      const mainShape = slide.shapes.addTextBox(sfbText, {
-        left: leftMargin,
-        top: topMargin,
-        width: boxWidth,
-        height: boxHeight,
-      });
-
-      const parallelShape = slide.shapes.addTextBox(fbvText, {
-        left: leftMargin + boxWidth + spacing,
-        top: topMargin,
-        width: boxWidth,
-        height: boxHeight,
-      });
-
-      mainShape.textFrame.font.size = 36;
-      parallelShape.textFrame.font.size = 36;
-
-        await context.sync();
-        console.log("Inserted selected verses.");
-      });
+      await insertVersesToSlide(verses);
     } catch (error) {
       console.error("Error inserting verses:", error);
     }
