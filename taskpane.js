@@ -1,4 +1,3 @@
-// taskpane.js (restored to pre-split version)
 import {
   fetchBibles,
   fetchBooks,
@@ -70,28 +69,30 @@ Office.onReady(() => {
       );
       const verses = await Promise.all(versePromises);
 
+      // Format main and parallel versions
       const sfbFormatted = verses
-        .map(v => formatVerseText(v.reference, v.baseText))
+        .map(v => `${formatVerseText(v.reference, v.baseText)}`)
         .join(" ");
       const fbvFormatted = verses
-        .map(v => formatVerseText(v.reference, v.parallelText || "[Not available]"))
+        .map(v => `${formatVerseText(v.reference, v.parallelText || "[Not available]")}`)
         .join(" ");
 
+      // Generate clean combined reference title like: "Genesis 1:1–2"
       const firstVerse = verses[0];
       const lastVerse = verses[verses.length - 1];
 
+      // Use reference string like "Genesis 1:1"
       const firstRefParts = firstVerse.reference.split(" ");
-      const bookName = firstRefParts.slice(0, -1).join(" ");
+      const bookName = firstRefParts.slice(0, -1).join(" "); // handles multi-word books like "1 Thessalonians"
       const [firstChapter, firstVerseNumber] = firstRefParts.at(-1).split(":");
 
       const lastRefParts = lastVerse.reference.split(" ");
       const [lastChapter, lastVerseNumber] = lastRefParts.at(-1).split(":");
 
       const sameChapter = firstChapter === lastChapter;
-      const baseRef = `${bookName} ${firstChapter}:$ {
-        firstVerseNumber === lastVerseNumber
-          ? firstVerseNumber
-          : `${firstVerseNumber}${sameChapter ? `–${lastVerseNumber}` : `–${lastChapter}:${lastVerseNumber}`}`
+      const baseRef = `${bookName} ${firstChapter}:${firstVerseNumber === lastVerseNumber
+        ? firstVerseNumber
+        : `${firstVerseNumber}${sameChapter ? `–${lastVerseNumber}` : `–${lastChapter}:${lastVerseNumber}`}`
       }`;
 
       const sfbTitle = `${baseRef} [SFB]`;
@@ -102,6 +103,7 @@ Office.onReady(() => {
       const sfbText = `${sfbTitle}\n${sfbFormatted}`;
       const fbvText = `${fbvTitle}\n${fbvFormatted}`;
 
+      // Insert textboxes on selected slide
       await PowerPoint.run(async (context) => {
         const selectedSlides = context.presentation.getSelectedSlides();
         selectedSlides.load("items");
@@ -114,25 +116,29 @@ Office.onReady(() => {
 
         const slide = selectedSlides.items[0];
 
-        const boxWidth = 400;
-        const boxHeight = 500;
-        const topMargin = 100;
-        const leftMargin = 60;
-        const spacing = 40;
+      // Insert side-by-side textboxes
+      const boxWidth = 400;
+      const boxHeight = 500;
+      const topMargin = 100;
+      const leftMargin = 60;
+      const spacing = 40;
 
-        slide.shapes.addTextBox(sfbText, {
-          left: leftMargin,
-          top: topMargin,
-          width: boxWidth,
-          height: boxHeight,
-        });
+      const mainShape = slide.shapes.addTextBox(sfbText, {
+        left: leftMargin,
+        top: topMargin,
+        width: boxWidth,
+        height: boxHeight,
+      });
 
-        slide.shapes.addTextBox(fbvText, {
-          left: leftMargin + boxWidth + spacing,
-          top: topMargin,
-          width: boxWidth,
-          height: boxHeight,
-        });
+      const parallelShape = slide.shapes.addTextBox(fbvText, {
+        left: leftMargin + boxWidth + spacing,
+        top: topMargin,
+        width: boxWidth,
+        height: boxHeight,
+      });
+
+      mainShape.textFrame.font.size = 36;
+      parallelShape.textFrame.font.size = 36;
 
         await context.sync();
         console.log("Inserted selected verses.");
@@ -142,6 +148,7 @@ Office.onReady(() => {
     }
   });
 
+  // Load list of Bibles in Swedish (or selected language)
   async function loadBibles() {
     try {
       const data = await fetchBibles();
@@ -153,6 +160,7 @@ Office.onReady(() => {
     }
   }
 
+  // Load books for selected Bible
   async function loadBooks(bibleId) {
     try {
       const data = await fetchBooks(bibleId);
@@ -163,6 +171,7 @@ Office.onReady(() => {
     }
   }
 
+  // Load chapters for selected book
   async function loadChapters(bibleId, bookId) {
     try {
       const data = await fetchChapters(bibleId, bookId);
@@ -173,6 +182,7 @@ Office.onReady(() => {
     }
   }
 
+  // Load checkboxes for verses in selected chapter
   async function loadVerses(bibleId, chapterId, container) {
     try {
       const data = await fetchVerses(bibleId, chapterId);
