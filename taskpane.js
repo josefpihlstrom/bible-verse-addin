@@ -137,6 +137,10 @@ Office.onReady(() => {
         height: boxHeight,
       });
 
+      mainShape.textFrame.load("font");
+      parallelShape.textFrame.load("font");
+      await context.sync();
+      
       mainShape.textFrame.font.size = 36;
       parallelShape.textFrame.font.size = 36;
 
