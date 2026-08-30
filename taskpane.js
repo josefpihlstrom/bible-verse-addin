@@ -98,7 +98,7 @@ Office.onReady(() => {
       const sfbTitle = `${baseRef} [SFB]`;
       const lastSpaceIndex = baseRef.lastIndexOf(" ");
       const chapterAndVerse = baseRef.substring(lastSpaceIndex + 1);
-      const fbvTitle = `${verses[0].parallelBookID} ${chapterAndVerse} [BSB]`;
+      const fbvTitle = `${verses[0].parallelBookID} ${chapterAndVerse} [NIV]`;
 
       const sfbText = `${sfbTitle}\n${sfbFormatted}`;
       const fbvText = `${fbvTitle}\n${fbvFormatted}`;
