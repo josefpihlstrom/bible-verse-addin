@@ -1,6 +1,6 @@
 const API_KEY = "9143bcf8e5fc5b5d169146ce13ef478b";
 const BASE_URL = "https://api.scripture.api.bible/v1";
-const FREE_BIBLE_ID = "bba9f40183526463-01"; // Berean standard Bible
+const FREE_BIBLE_ID = "78a9f6124f344018-01"; // New Internaltional Version 2011
 
 async function fetchBibles() {
   const res = await fetch(`${BASE_URL}/bibles?language=swe`, {
