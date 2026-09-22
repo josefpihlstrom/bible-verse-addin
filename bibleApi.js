@@ -1,4 +1,4 @@
-const API_KEY = "9143bcf8e5fc5b5d169146ce13ef478b";
+const API_KEY = "2nYbbN9hYzcp9iC39WhQK";
 const BASE_URL = "https://api.scripture.api.bible/v1";
 const FREE_BIBLE_ID = "78a9f6124f344018-01"; // New Internaltional Version 2011
 
